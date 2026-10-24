@@ -1112,27 +1112,29 @@
       px.beginPath(); px.moveTo(-p.r,0); px.quadraticCurveTo(0,-p.r*.9,p.r,0); px.quadraticCurveTo(0,p.r*.7,-p.r,0); px.fill(); px.restore(); }
     if(parts.length) requestAnimationFrame(loop); else { running=false; px.clearRect(0,0,innerWidth,innerHeight); } }
 
-  /* ---------- music box (original melody, synthesised) ---------- */
-  let actx=null, master=null, timer=null, musicOn=false, step=0, nextT=0;
-  const mf=m=>440*Math.pow(2,(m-69)/12);
-  const CH=[[48,55,60,64,67,64],[45,52,57,60,64,60],[41,48,53,57,60,57],[43,50,55,59,62,59]];
-  const MEL=[76,null,74,72,null,79,76,null,72,69,null,72,77,null,76,74,null,72,74,null,71,67,null,null];
-  function bell(f,t,v){ const o=actx.createOscillator(),o2=actx.createOscillator(),g=actx.createGain(),g2=actx.createGain();
-    o.frequency.value=f; o2.frequency.value=f*3.01; g2.gain.value=.18; g.gain.setValueAtTime(0,t); g.gain.linearRampToValueAtTime(v,t+.008); g.gain.exponentialRampToValueAtTime(.0008,t+2.2);
-    o.connect(g); o2.connect(g2); g2.connect(g); g.connect(master); o.start(t); o2.start(t); o.stop(t+2.3); o2.stop(t+2.3); }
-  function schedule(){ while(nextT<actx.currentTime+.6){ const bar=Math.floor(step/6)%4, beat=step%6; bell(mf(CH[bar][beat]+12),nextT,.09); const m=MEL[step%24]; if(m) bell(mf(m+12),nextT,.13); step++; nextT+=.3; } }
-  function startMusic(){ try{ if(!actx){ actx=new (window.AudioContext||window.webkitAudioContext)(); master=actx.createGain(); master.gain.value=0;
-        const d=actx.createDelay(); d.delayTime.value=.36; const fb=actx.createGain(); fb.gain.value=.32; const lp=actx.createBiquadFilter(); lp.frequency.value=2600;
-        master.connect(actx.destination); master.connect(d); d.connect(lp); lp.connect(fb); fb.connect(d); lp.connect(actx.destination); }
-      actx.resume(); nextT=actx.currentTime+.05; master.gain.cancelScheduledValues(actx.currentTime); master.gain.setTargetAtTime(.5,actx.currentTime,.4);
-      clearInterval(timer); timer=setInterval(schedule,120); schedule(); musicOn=true; musicBtn.classList.add('on'); musicBtn.setAttribute('aria-pressed','true'); musicBtn.setAttribute('aria-label','Pause music'); }catch(_){} }
-  function stopMusic(){ if(!actx) return; master.gain.setTargetAtTime(0,actx.currentTime,.2); clearInterval(timer); musicOn=false; musicBtn.classList.remove('on'); musicBtn.setAttribute('aria-pressed','false'); musicBtn.setAttribute('aria-label','Play music'); }
+   /* ---------- engagement music ---------- */
+  const audio = new Audio('engagement-music.mp3');
+  audio.loop = true;
+  audio.preload = 'auto';
+  let musicOn = false;
+
+  function startMusic(){
+    audio.play().then(()=>{
+      musicOn = true;
+      musicBtn.classList.add('on');
+      musicBtn.setAttribute('aria-pressed','true');
+      musicBtn.setAttribute('aria-label','Pause music');
+    }).catch(error=>console.warn('Music playback could not start:', error));
+  }
+  function stopMusic(){
+    audio.pause();
+    musicOn = false;
+    musicBtn.classList.remove('on');
+    musicBtn.setAttribute('aria-pressed','false');
+    musicBtn.setAttribute('aria-label','Play music');
+  }
   musicBtn.addEventListener('click',()=>musicOn?stopMusic():startMusic());
   document.addEventListener('visibilitychange',()=>{ if(document.hidden&&musicOn) stopMusic(); });
-  /* ---------- initial language: #ar link, saved choice ---------- */
-  (function(){ let l='en'; try{ l=localStorage.getItem('mm-lang')||'en'; }catch(_){}
-    if(location.hash==='#ar') l='ar'; if(location.hash==='#en') l='en';
-    if(l==='ar') setLang('ar'); })();
 })();
 </script>
 
